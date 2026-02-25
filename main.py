@@ -14,25 +14,18 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Проверка счётчиков — Telegram Mini App backend")
 
-# Добавляем CORS — это ключевое изменение!
+# Добавляем CORS — обязательно для работы с Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],                    # Для теста — разрешаем все домены
+    allow_origins=["*"],                    # Для теста; потом можно заменить на ["https://твой-vercel-домен.vercel.app"]
     allow_credentials=True,
-    allow_methods=["*"],                    # Разрешаем POST, OPTIONS и т.д.
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Пути
+# Пути (только для checks.json)
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "checks.json"
-STATIC_DIR = BASE_DIR / "static"
-
-# Создаём папку static, если её нет
-STATIC_DIR.mkdir(exist_ok=True)
-
-# Подключаем статические файлы (index.html в static/)
-app.mount("/static", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 # Модель данных
 class CheckData(BaseModel):
@@ -86,15 +79,7 @@ def save_check(new_check: dict):
 # ────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    index_path = STATIC_DIR / "index.html"
-    if index_path.exists():
-        return index_path.read_text(encoding="utf-8")
-    return """
-    <h1 style="text-align:center; margin-top:100px; color:#e74c3c;">
-        Файл static/index.html не найден
-    </h1>
-    <p style="text-align:center;">Положите ваш index.html в папку static/</p>
-    """
+    return "<h1>Бэкенд работает</h1><p>Перейди на /checks для таблицы</p>"
 
 @app.get("/checks", response_class=HTMLResponse)
 async def show_checks():
