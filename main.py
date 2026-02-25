@@ -1,11 +1,9 @@
 # main.py
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 import logging
@@ -16,6 +14,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Проверка счётчиков — Telegram Mini App backend")
 
+# Добавляем CORS — это ключевое изменение!
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],                    # Для теста — разрешаем все домены
+    allow_credentials=True,
+    allow_methods=["*"],                    # Разрешаем POST, OPTIONS и т.д.
+    allow_headers=["*"],
+)
+
 # Пути
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "checks.json"
@@ -24,7 +31,7 @@ STATIC_DIR = BASE_DIR / "static"
 # Создаём папку static, если её нет
 STATIC_DIR.mkdir(exist_ok=True)
 
-# Подключаем статические файлы (index.html должен лежать в static/)
+# Подключаем статические файлы (index.html в static/)
 app.mount("/static", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 # Модель данных
@@ -38,9 +45,8 @@ class CheckData(BaseModel):
     timestamp: str | None = None
 
 # ────────────────────────────────────────────────
-# Вспомогательные функции для работы с файлом
+# Вспомогательные функции
 # ────────────────────────────────────────────────
-
 def load_checks() -> list[dict]:
     if not DATA_FILE.exists():
         logger.info(f"Файл {DATA_FILE} не найден → создаём пустой список")
@@ -53,7 +59,7 @@ def load_checks() -> list[dict]:
                 return []
             data = json.loads(content)
             if not isinstance(data, list):
-                logger.warning("Данные в файле не являются списком → возвращаем пустой список")
+                logger.warning("Данные в файле не являются списком → возвращаем пустой")
                 return []
             return data
     except json.JSONDecodeError as e:
@@ -78,7 +84,6 @@ def save_check(new_check: dict):
 # ────────────────────────────────────────────────
 # Маршруты
 # ────────────────────────────────────────────────
-
 @app.get("/", response_class=HTMLResponse)
 async def root():
     index_path = STATIC_DIR / "index.html"
@@ -233,7 +238,6 @@ async def show_checks():
     </div>
 </body>
 </html>"""
-
     return html
 
 @app.post("/api/save")
@@ -259,6 +263,6 @@ if __name__ == "__main__":
         app,
         host="0.0.0.0",
         port=8000,
-        reload=True,                # авто-перезапуск при изменении кода
+        reload=True,
         log_level="info"
     )
