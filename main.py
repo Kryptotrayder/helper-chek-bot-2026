@@ -225,6 +225,26 @@ async def show_checks():
 </html>"""
     return html
 
+    
+    @app.post("/check_user")
+async def check_user(data: dict):
+    try:
+        user_id = data.get("user_id")
+        if not user_id:
+            return {"is_blocked": False}
+        
+        checks = load_checks()
+        for entry in checks:
+            entry_user = entry.get("user", {})
+            if entry_user and str(entry_user.get("id")) == str(user_id):
+                logger.info(f"Пользователь {user_id} уже существует — блокировка")
+                return {"is_blocked": True}
+        
+        return {"is_blocked": False}
+    except Exception as e:
+        logger.error(f"Ошибка проверки пользователя: {e}")
+        return {"is_blocked": False}
+
 @app.post("/api/save")
 async def save_data(check: CheckData):
     try:
@@ -251,3 +271,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+
