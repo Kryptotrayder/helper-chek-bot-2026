@@ -226,7 +226,7 @@ async def show_checks():
     return html
 
     
-    @app.post("/check_user")
+@app.post("/check_user")
 async def check_user(data: dict):
     try:
         user_id = data.get("user_id")
